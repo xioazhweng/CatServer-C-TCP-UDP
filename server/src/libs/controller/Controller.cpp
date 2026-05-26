@@ -13,11 +13,12 @@ void Controller::run() {
     //feeder.send_msg({9000, "144.31.132.123"}, "suka");
   //  feeder.feed_answer("suka");
    
-    FeedQueue que;
     try {
-        que.push("@Alex - Milk~");
-        auto elem = que.front();
-        std::cerr << elem.first << elem.second << std::endl;
+        auto dt = udpt->receive_msg();
+        feedq->push(dt.msg_);
+        auto elem =  feedq->front();
+        udpt->send_msg(dt.addr_, "suka");
+        // << elem.first << elem.second << std::endl;
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
     }
