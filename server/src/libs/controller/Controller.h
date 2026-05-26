@@ -2,7 +2,7 @@
 #include <memory>
 #include "../libs/udptransceiver/UDPTransceiver.h"
 #include "../libs/feed_queue/FeedQueue.h"
-
+#include "../libs/logger/Logger.h"
 
 struct Params {
     size_t udp_port;
@@ -18,6 +18,7 @@ class Controller {
         Params params_;
         std::unique_ptr<UDPTransceiver> udpt;
         std::unique_ptr<FeedQueue> feedq;
+        std::unique_ptr<Logger> logger;
         void init();
     public:
         //Controller(Params & params);
