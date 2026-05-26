@@ -5,7 +5,6 @@ UDPTransceiver::UDPTransceiver(uint32_t server_port_, const std::string & server
     server({server_port_, server_ip_addr_}) {
     create_socket();
     server_addr = get_addr(server);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         throw std::runtime_error("Bind failed");
     };
@@ -61,9 +60,8 @@ DataGram UDPTransceiver::receive_msg() {
     sockaddr_in client_addr{}; 
     socklen_t addr_len = sizeof(client_addr);
     ssize_t size = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *) &client_addr, &addr_len);
-    if (size <= 0) {
+    if (size < 0) {
         throw std::runtime_error("recvfrom failed");
     }
-    buf[size] = '\0';
-    return DataGram(client_addr, buf);
+    return DataGram(client_addr, std::string(buf, size));
 };

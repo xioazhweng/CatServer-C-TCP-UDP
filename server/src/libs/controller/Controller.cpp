@@ -15,7 +15,10 @@ void Controller::run() {
   //  feeder.feed_answer("suka");
    
     try {
+       
+        udpt->send_msg({43311, "192.168.1.106"}, "suka");
         auto dt = udpt->receive_msg();
+        
         logger->log(Level::INFO, dt.msg_);
         feedq->push(dt.msg_);
         auto elem =  feedq->front();
