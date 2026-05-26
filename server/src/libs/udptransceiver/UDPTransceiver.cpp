@@ -64,5 +64,8 @@ DataGram UDPTransceiver::receive_msg() {
     if (size < 0) {
         throw std::runtime_error("recvfrom failed");
     }
+    if (size == 0) {
+        throw std::runtime_error("recvfrom failed: empty");
+    }
     return DataGram(client_addr, std::string(buf, size));
 };
