@@ -5,6 +5,7 @@ UDPTransceiver::UDPTransceiver(uint32_t server_port_, const std::string & server
     server({server_port_, server_ip_addr_}) {
     create_socket();
     server_addr = get_addr(server);
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         throw std::runtime_error("Bind failed");
     };
