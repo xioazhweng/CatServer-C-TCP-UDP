@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "libs/controller/Controller.h"
+#include "controller/Controller.h"
 
 int main(void) {
     Controller ctr(43311, 9000, "192.168.1.109");

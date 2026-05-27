@@ -51,6 +51,8 @@ void UDPTransceiver::send_msg(const std::pair<uint32_t, std::string> & addr, con
     sockaddr_in servert = get_addr(addr);
     sendto(sock, msg.c_str(), msg.size(), 0, (struct sockaddr*) &servert, sizeof(servert));
 }
+
+
 void UDPTransceiver::send_msg(const DataGram & dg) {
     sockaddr_in servert = get_addr(dg.addr_);
     sendto(sock, dg.msg_.c_str(), dg.msg_.size(), 0, (struct sockaddr*) &servert, sizeof(servert));
@@ -61,9 +63,11 @@ DataGram UDPTransceiver::receive_msg() {
     sockaddr_in client_addr{}; 
     socklen_t addr_len = sizeof(client_addr);
     ssize_t size = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *) &client_addr, &addr_len);
+   
     if (size <= 0) {
         throw std::runtime_error("recvfrom failed");
     }
     buf[size] = '\0';
-    return DataGram(client_addr, buf);
+    DataGram dt(client_addr, buf);
+    return dt;
 };

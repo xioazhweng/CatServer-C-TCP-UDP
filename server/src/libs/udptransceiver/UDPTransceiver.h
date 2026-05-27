@@ -11,7 +11,7 @@ struct DataGram {
     std::string msg_;
     DataGram(const std::pair<uint32_t, std::string> & addr, const std::string & msg): msg_(msg), addr_(addr) {};
      DataGram(const std::pair<uint32_t, std::string> & addr, const char * msg): msg_(msg), addr_(addr) {};
-    DataGram(const sockaddr_in & addr, const std::string& msg) {
+    DataGram(const sockaddr_in & addr, const std::string& msg): msg_(msg) {
         char ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET,
                   &addr.sin_addr,

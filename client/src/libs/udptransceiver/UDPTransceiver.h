@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <string>
+
 
 struct DataGram {
     std::pair<uint32_t, std::string> addr_;

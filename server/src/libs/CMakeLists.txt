@@ -1,5 +1,7 @@
 add_subdirectory(udptransceiver)
 #add_subdirectory(tcptransceiver)
 add_subdirectory(feed_queue)
-add_subdirectory(controller)
 add_subdirectory(logger)
+add_subdirectory(space_cat)
+add_subdirectory(pet_queue)
+add_subdirectory(stateservice)
