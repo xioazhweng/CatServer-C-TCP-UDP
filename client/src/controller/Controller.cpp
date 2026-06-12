@@ -2,48 +2,73 @@
 #include <thread>
 #include <mutex>
 #include <stdexcept>
+#include <cstring>
 
-void Controller::listen_udp() {
+void NetworkController::listen_udp() {
     while (listening) {
-        auto dt = udpt->receive_msg();
-        {
+        ssize_t size = udp_client->receive(server_addr, buffer, buffer_size);
+        if (size <= 0) {
+            std::lock_guard<std::mutex> mt(log_mutex);
+            logs.push_front("Couldn't receive message: " + std::string(strerror(errno)));
+        } else
+        { 
             std::lock_guard<std::mutex> mt(que_mutex);
-            que.push(CDataGram(dt.addr_.first, dt.addr_.second, dt.msg_, MSGType::UDP));
+            que.push({MSGType::UDP, std::string(buffer)});
         }
     }
-
 };
-void Controller::listen_tcp() {
 
+void NetworkController::listen_tcp() {
+    while (listening) {
+        ssize_t size = tcp_stream->receive(buffer, buffer_size);
+        if (size <= 0) {
+            std::lock_guard<std::mutex> mt(log_mutex);
+            logs.push_front("Couldn't receive message: " + std::string(strerror(errno)));
+        } else
+        { 
+            std::lock_guard<std::mutex> mt(que_mutex);
+            que.push({MSGType::UDP, std::string(buffer)});
+        }
+    };
 };
-void Controller::pop_queue() {
-    std::lock_guard<std::mutex> lock(que_mutex);
-    if (que.empty()) {
-        throw std::runtime_error("empty queue");
+
+
+void NetworkController::send(const std::pair<MSGType, std::string> & unit) {
+    ssize_t size;
+    if (unit.first == MSGType::UDP) {
+        ssize_t size = udp_client->send(server_addr, unit.second.c_str(), unit.second.size());
+    } else if (unit.first == MSGType::UDP) {       
+        tcp_stream->send(unit.second.c_str(), unit.second.size());
     }
-    que.pop();  
-};
+    if (size <= 0) {
+        std::lock_guard<std::mutex> mt(log_mutex);
+        logs.push_front("Couldn't send message: " + std::string(strerror(errno)));
+    };
+}
 
-void Controller::send(unsigned p, const std::string & ip, 
-                      MSGType type, const std::string & msg) {
-    if (type == MSGType::UDP) {
-        udpt->send_msg({p, ip},msg);
-    }
-};
-void Controller::send(const CDataGram & dt) {
-    send(dt.port, dt.ip, dt.type, dt.msg);
-};
-void Controller::listen() {
+void NetworkController::listen() {
     listening = true;
-    udp_thread = std::thread(&Controller::listen_udp, this);
+    udp_thread = std::thread(&NetworkController::listen_udp, this);
+    tcp_thread = std::thread(&NetworkController::listen_tcp, this);
 
 };
-bool Controller::back_queue(CDataGram &out) {
+
+bool NetworkController::back_queue(std::pair<MSGType, std::string> & out) {
     std::lock_guard<std::mutex> lock(que_mutex);
 
     if (que.empty())
         return false;
 
     out = que.back();
+    que.pop();
     return true;
 }
+
+bool  NetworkController::back_logs(std::string & out) {
+    std::lock_guard<std::mutex> lock(log_mutex);
+    if (logs.empty())
+        return false;
+    out = logs.back();
+    logs.pop_back();
+    return true;
+};

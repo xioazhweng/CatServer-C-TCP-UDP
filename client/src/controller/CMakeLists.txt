@@ -1,2 +1,7 @@
-add_library(controller Controller.h Controller.cpp)
-target_link_libraries(controller udptransceiver)
+add_library(controller Controller.cpp Controller.h)
+
+target_link_libraries(controller
+    PUBLIC
+        udptransceiver
+        tcptranceiver
+)

@@ -1,101 +1,108 @@
 #include <iostream>
-#include "controller/Controller.h"
 
-#include <ftxui/component/screen_interactive.hpp>
+#include "clientui/ClientUI.h"
+#include "controller/Controller.h"
+/*#include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <string>
+#include <deque>
+*/
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+//using namespace ftxui;
+struct NetworkConfig {
+    std::string server_ip;
+    uint32_t server_port;
+    std::string client_ip;
+    uint32_t client_port;
+    
+    NetworkConfig() 
+        : server_ip("127.0.0.1")
+        , server_port(8080)
+        , client_ip("0.0.0.0")
+        , client_port(0) 
+    {}
+};
+NetworkConfig loadConfig(const std::string& filename);
 
-using namespace ftxui;
 
-int main(int argc, char * argv[]) {
-    if(argc < 3) {
-        std::cerr << "Usage: ./catclient ip port" << std::endl;
+int main(void) {
+    NetworkConfig config = loadConfig("../config/params.json");
+    std::thread ui_thread;
+    std::mutex m;
+    ClientParams params(config.client_ip, std::to_string(config.client_port), 
+                        config.server_ip, std::to_string(config.server_port));
+    
+    try {
+        ClientUI ui(params);
+        ui_thread = std::thread(&ClientUI::run, &ui);
+        NetworkController ctr(config.client_port, config.client_ip, config.server_port, config.server_ip);
+        ctr.listen();
+        if (ui.shouldSend()) {
+            std::lock_guard<std::mutex> lock(m);
+            MSGType type = params.protocol == "TCP" ? MSGType::TCP : MSGType::UDP; 
+            ctr.send({type, params.message});
+            ui.add_log("SEND (" + params.protocol + "): " + params.message);
+            ui.resetSendFlag();
+        }
+        if (!ctr.is_msg_queue_empty()) {
+            std::pair<MSGType, std::string> out;
+            std::string type = out.first == MSGType::TCP ? "TCP" : "UDP";
+            if (ctr.back_queue(out)) {
+                ui.add_log("SEND (" + type + "): " + out.second);
+            };
+
+            
+        }
+        if (!ctr.is_logs_queue_empty()) {
+            std::string out;
+            if (ctr.back_logs(out)) {
+                ui.add_log("ERROR: " + out);
+            };
+        }
+    } catch (std::exception & e) {
+        std::cerr << e.what() << std::endl;
+        ui_thread.join();
         return 1;
     }
+    ui_thread.join();
+    return 0;
+}
+
+NetworkConfig loadConfig(const std::string& filename) {
+    NetworkConfig config;
     
-    auto screen = ScreenInteractive::FitComponent();
-    std::string local_ip(argv[1]);
-    std::string local_port = argv[2];
-    MSGType type = MSGType::UDP;
+    try {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Cannot open config file: " + filename);
+        }
+        
+        json j;
+        file >> j;
+        
+        if (j.contains("server")) {
+            config.server_ip = j["server"].value("ip", "127.0.0.1");
+            config.server_port = j["server"].value("port", 8080);
+        }
+        
+        if (j.contains("client")) {
+            config.client_ip = j["client"].value("ip", "0.0.0.0");
+            config.client_port = j["client"].value("port", 0);
+        }
+        
+        std::cout << "Config loaded from " << filename << std::endl;
+        
+    } catch (const json::parse_error& e) {
+        std::cerr << "JSON parse error: " << e.what() << std::endl;
+        std::cerr << "Using default config" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error loading config: " << e.what() << std::endl;
+        std::cerr << "Using default config" << std::endl;
+    }
     
-    Controller ctr(std::stoi(local_port), local_ip);
-    std::string remote_ip = "127.0.0.1";
-    std::string remote_port = "6000";
-
-    std::string message;
-
-    int protocol = 0; // 0 = TCP, 1 = UDP
-
-    
-    auto input_local_ip    = Input(&local_ip, "Local IP");
-    auto input_local_port  = Input(&local_port, "Local Port");
-
-    auto input_remote_ip   = Input(&remote_ip, "Remote IP");
-    auto input_remote_port  = Input(&remote_port, "Remote Port");
-
-    auto input_message     = Input(&message, "Message");
-
-
-    std::vector<std::string> protocol_labels = {"TCP", "UDP"};
-    auto protocol_selector = Radiobox(&protocol_labels, &protocol);
-    type = protocol == 0 ? MSGType::UDP : MSGType::TCP;
-   
-    auto send_button = Button("SEND", [&] {
-
-        std::cout << "=== SEND ===\n";
-        std::cout << "Local:  " << local_ip << ":" << local_port << "\n";
-        std::cout << "Remote: " << remote_ip << ":" << remote_port << "\n";
-        std::cout << "Proto:  " << (protocol == 0 ? "TCP" : "UDP") << "\n";
-        std::cout << "Msg:    " << message << "\n\n";
-
-
-        // TODO: call your socket layer here
-    });
-
-    auto form = Container::Vertical({
-
-        input_local_ip,
-        input_local_port,
-
-        input_remote_ip,
-        input_remote_port,
-
-        input_message,
-
-        protocol_selector,
-        send_button,
-    });
-
-    auto renderer = Renderer(form, [&] {
-        return vbox({
-
-            text("Cat Network Tool") | bold,
-            separator(),
-
-            hbox({text("Local IP: "), input_local_ip->Render()}),
-            hbox({text("Local Port: "), input_local_port->Render()}),
-
-            separator(),
-
-            hbox({text("Remote IP: "), input_remote_ip->Render()}),
-            hbox({text("Remote Port: "), input_remote_port->Render()}),
-
-            separator(),
-
-            hbox({text("Message: "), input_message->Render()}),
-
-            separator(),
-
-            text("Protocol:"),
-            protocol_selector->Render(),
-
-            separator(),
-
-            send_button->Render(),
-
-        }) | border;
-    });
-
-    screen.Loop(renderer);
+    return config;
 }

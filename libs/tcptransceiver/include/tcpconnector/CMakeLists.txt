@@ -1,0 +1,2 @@
+add_library(tcpconnector INTERFACE TCPConnector.h)
+target_link_libraries(tcpconnector INTERFACE tcpstream_i)
