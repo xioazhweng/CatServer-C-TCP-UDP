@@ -14,7 +14,7 @@ void UDPTransceiver::close_socket() {
     close(sd);
 };
 
-UDPTransceiver::UDPTransceiver(uint32_t server_port_, const std::string & server_ip_addr_): port(server_port_), ip(server_ip_addr_) {
+UDPTransceiver::UDPTransceiver(uint32_t port_, const std::string & ip_addr): port(port_), ip(ip_addr) {
     create_socket();
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;

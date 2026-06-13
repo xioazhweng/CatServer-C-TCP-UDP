@@ -2,13 +2,7 @@
 
 #include "clientui/ClientUI.h"
 #include "controller/Controller.h"
-/*#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/component_base.hpp>
-#include <ftxui/dom/elements.hpp>
 #include <string>
-#include <deque>
-*/
 #include <fstream>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -31,44 +25,46 @@ NetworkConfig loadConfig(const std::string& filename);
 
 int main(void) {
     NetworkConfig config = loadConfig("../config/params.json");
-    std::thread ui_thread;
-    std::mutex m;
-    ClientParams params(config.client_ip, std::to_string(config.client_port), 
-                        config.server_ip, std::to_string(config.server_port));
+    
     
     try {
+        
+        std::mutex m;
+        ClientParams params(config.client_ip, std::to_string(config.client_port), 
+                            config.server_ip, std::to_string(config.server_port));
         ClientUI ui(params);
-        ui_thread = std::thread(&ClientUI::run, &ui);
-        NetworkController ctr(config.client_port, config.client_ip, config.server_port, config.server_ip);
-        ctr.listen();
-        if (ui.shouldSend()) {
-            std::lock_guard<std::mutex> lock(m);
-            MSGType type = params.protocol == "TCP" ? MSGType::TCP : MSGType::UDP; 
-            ctr.send({type, params.message});
-            ui.add_log("SEND (" + params.protocol + "): " + params.message);
-            ui.resetSendFlag();
-        }
-        if (!ctr.is_msg_queue_empty()) {
-            std::pair<MSGType, std::string> out;
-            std::string type = out.first == MSGType::TCP ? "TCP" : "UDP";
-            if (ctr.back_queue(out)) {
-                ui.add_log("SEND (" + type + "): " + out.second);
-            };
+       NetworkController ctr(config.client_port, config.client_ip, config.server_port, config.server_ip);
+        std::thread ui_thread = std::thread(&ClientUI::run, &ui);
+        ui.add_log("WELCOME TO CATCLIENT!");
+                
+        while(1) {
+            if (ui.shouldSend()) {
+                const auto & p = ui.get_params();
+                if (p.message.empty()) {
+                    ui.add_log("ERROR: Don't wanna send empty message");
+                } else if (p.protocol == "UDP") {
+                    ctr.send({MSGType::UDP, p.message});
+                    ui.add_log("SEND: UDP " + std::to_string(p.message.size()) + p.message);
 
-            
-        }
-        if (!ctr.is_logs_queue_empty()) {
-            std::string out;
-            if (ctr.back_logs(out)) {
-                ui.add_log("ERROR: " + out);
-            };
-        }
+                } else if (p.protocol == "TCP") {
+                    ctr.send({MSGType::TCP, p.message});
+                    ui.add_log("SEND: TCP " + std::to_string(p.message.size()) + p.message);
+                } else {
+                    ui.add_log("ERROR: unknonw protocol");
+                }
+                std::string l;
+                while (ctr.back_logs(l)) {
+                    ui.add_log(l);
+                }
+                ui.resetSendFlag();
+            }
+        };
+        ui_thread.join();
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
-        ui_thread.join();
         return 1;
     }
-    ui_thread.join();
+   
     return 0;
 }
 

@@ -13,13 +13,14 @@ void ClientUI::run() {
     auto screen = ScreenInteractive::Fullscreen();;
     auto input_message     = Input(&params.message, "Message");
 
-    int protocol;
+    int protocol = 1;
     std::vector<std::string> protocol_labels = {"TCP", "UDP"};
     auto protocol_selector = Radiobox(&protocol_labels, &protocol);
     params.protocol = protocol == 0 ?  "TCP" : "UDP";
    
     auto send_button = Button("SEND", [&] {
         is_send.store(true);
+        add_log("send clicked");
         std::cout << "=== SEND ===\n";
         std::cout << "Local:  " << params.local_ip << ":" << params.local_port << "\n";
         std::cout << "Remote: " << params.remote_ip << ":" << params.remote_port << "\n";
@@ -36,9 +37,12 @@ void ClientUI::run() {
 
     auto log_renderer = Renderer([&] {
         Elements lines;
-        for (auto &l : logs)
-            lines.push_back(text(l));
-
+        {
+            std::lock_guard<std::mutex> lock(log_mutex);
+            for (auto &l : logs)
+                lines.push_back(text(l));
+            
+        }
         return vbox(lines) | vscroll_indicator | frame | flex;
     });
 
@@ -76,4 +80,12 @@ void ClientUI::run() {
     });
     
     screen.Loop(renderer);
+}
+
+void ClientUI::add_log (const std::string & msg) {
+    std::lock_guard<std::mutex> lock(log_mutex);
+    logs.push_back(msg);
+    while (logs.size() > MAX_LOG_SIZE) {
+        logs.pop_front();
+    }
 }

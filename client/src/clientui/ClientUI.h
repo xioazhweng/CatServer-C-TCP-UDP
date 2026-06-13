@@ -6,6 +6,8 @@
 #include <functional>
 #include <mutex>
 
+#define MAX_LOG_SIZE 500u
+
 struct ClientParams {
     std::string local_ip;
     std::string local_port;
@@ -17,7 +19,7 @@ struct ClientParams {
                 std::string local_port_,
                 std::string remote_ip_, 
                 std::string remote_port_,
-                std::string protocol_ = "tcp")
+                std::string protocol_ = "udp")
     : local_ip(std::move(local_ip_))
     , local_port(std::move(local_port_))
     , remote_ip(std::move(remote_ip_))
@@ -42,10 +44,7 @@ class ClientUI {
         std::atomic<bool> is_send{false};
         std::deque<std::string> logs;
         std::mutex log_mutex;
-        std::string formatstr(unsigned port, const std::string & ip,
-                 const std::string & msg, const std::string & type) {
-                return type + ": " + ip + ":" + std::to_string(port) + " - " + msg;
-        };
+
        
 
     public:
@@ -60,10 +59,6 @@ class ClientUI {
         void resetSendFlag() {
             is_send.store(false);
         }
-        void add_log (std::string msg) {
-            std::lock_guard<std::mutex> lock(log_mutex);
-            logs.push_back(msg);
-            if (logs.size() > 200)
-                logs.pop_front();
-        };
+        void add_log (const std::string & msg);
+        const ClientParams & get_params() {return params;};
 };

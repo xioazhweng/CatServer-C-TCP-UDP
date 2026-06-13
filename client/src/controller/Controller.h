@@ -56,13 +56,11 @@ class NetworkController {
             client_addr.sin_family = AF_INET;
             client_addr.sin_port = htons(src_port);
             inet_pton(AF_INET, src_ip.c_str(), &client_addr.sin_addr);  
-            
+           
             udp_client = std::make_unique<UDPTransceiver>(src_port, src_ip);
             tcp_client = std::make_unique<TCPClient>();
-            tcp_stream = tcp_client->connect(src_port, src_ip.c_str());
-            if (tcp_stream == nullptr) {
-                throw std::runtime_error("Can't establesh TCP connection");
-            }
+            tcp_stream = tcp_client->connect(dst_port, dst_ip.c_str());
+                          
         };
         
         void send(const std::pair<MSGType, std::string> & unit);
@@ -81,8 +79,8 @@ class NetworkController {
         void stop_listening() {listening = false;};
         ~NetworkController() {
             listening = false;
-            udp_thread.join();
-            tcp_thread.join();
+            if (udp_thread.joinable()) udp_thread.join();
+            if (tcp_thread.joinable()) tcp_thread.join();
         }
         
 };

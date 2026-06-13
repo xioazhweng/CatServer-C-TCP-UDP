@@ -32,12 +32,16 @@ void NetworkController::listen_tcp() {
     };
 };
 
-
+#include <iostream>
 void NetworkController::send(const std::pair<MSGType, std::string> & unit) {
     ssize_t size;
     if (unit.first == MSGType::UDP) {
-        ssize_t size = udp_client->send(server_addr, unit.second.c_str(), unit.second.size());
-    } else if (unit.first == MSGType::UDP) {       
+        std::cout << "IP: " << inet_ntoa(server_addr.sin_addr) << "\n"
+          << "Port: " << ntohs(server_addr.sin_port) << "\n"
+          << "Family: " << (server_addr.sin_family == AF_INET ? "IPv4" : "Other") << "\n"
+          << "Address raw: 0x" << std::hex << ntohl(server_addr.sin_addr.s_addr) << std::dec << std::endl;
+        size = udp_client->send(server_addr, unit.second.c_str(), unit.second.size());
+    } else if (unit.first == MSGType::TCP) {       
         tcp_stream->send(unit.second.c_str(), unit.second.size());
     }
     if (size <= 0) {
@@ -49,7 +53,8 @@ void NetworkController::send(const std::pair<MSGType, std::string> & unit) {
 void NetworkController::listen() {
     listening = true;
     udp_thread = std::thread(&NetworkController::listen_udp, this);
-    tcp_thread = std::thread(&NetworkController::listen_tcp, this);
+    if (tcp_stream != nullptr)
+        tcp_thread = std::thread(&NetworkController::listen_tcp, this);
 
 };
 
