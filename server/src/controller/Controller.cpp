@@ -1,7 +1,7 @@
 #include "Controller.h"
 #include <iostream>
 #include <thread>
-
+#include "../libs/udptransceiver/libs/UDPTransceiver.h"
 Controller::Controller(size_t udpport, size_t tcpport, const std::string & ip): params_(udpport, tcpport, ip) {
     udpt = std::make_unique<UDPTransceiver>(udpport, ip);
    // feedq = std::make_unique<FeedQueue>();
@@ -14,30 +14,28 @@ Controller::Controller(size_t udpport, size_t tcpport, const std::string & ip): 
 void Controller::run_udp() {
     while (true) {
         try {
-            auto dt = udpt->receive_msg();
-            std::mutex udp_mutex;
-            {
-                std::lock_guard<std::mutex> m(udp_mutex);
-                feedq[dt.addr_].push(dt.msg_);
-                if (feedq[dt.addr_].empty()) {
+            sockaddr_in sender_addr;
+            char buffer[MAX_BUF_SIZE];
+            ssize_t size = udpt->receive(sender_addr, buffer, MAX_BUF_SIZE);
+            if (size > 0) {
+                std::lock_guard<std::mutex> m(feed_mutex);
+                std::pair<unsigned, std::string> key = {ntohs(sender_addr.sin_port), inet_ntoa(sender_addr.sin_addr)};
+                feedq[key].push(std::string(buffer, size));
+                if (feedq[key].empty()) {
                     continue;
                 }
-                for (auto & [key, value] : feedq) {
-                    if (value.empty()) {
-                        continue;
-                    }
-                    std::pair<FoodType, std::string> & info = value.front();
-                    if (!cat->is_pleased(info.first)) {
-                        udpt->send_msg(key, "Cat dissapointed by " + info.second);
-                    } else {
-                        udpt->send_msg(key, "Cat amused by " + info.second);
-                    }
-                    value.pop();
+                std::pair<FoodType, std::string> & info = feedq[key].front();
+                std::string mesg;
+                if (!cat->is_pleased(info.first)) {
+                    mesg = "Cat dissapointed by " + info.second;
+                } else {
+                    mesg = "Cat amused by " + info.second;
                 }
+                size = udpt->send(sender_addr, mesg.c_str(), mesg.size());
+                feedq[key].pop();
+                
             }
             
-
-
         } catch (const std::exception & e) {
             logger->log(Level::ERROR, e.what());
         }
@@ -58,9 +56,9 @@ void Controller::run() {
   //  feeder.feed_answer("suka");
     std::thread t1(&Controller::run_udp, this);
     std::thread t2(&Controller::run_tcp, this);
-
     t1.join();
     t2.join();
+   
 
    
 }

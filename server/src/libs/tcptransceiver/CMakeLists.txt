@@ -1,1 +1,0 @@
-add_library(tcptransceiver TCPTransceiver.h TCPTransceiver.cpp)

@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include "../libs/udptransceiver/UDPTransceiver.h"
+#include "../libs/udptransceiver/include/UDPTransceiverI.h"
 #include "../libs/feed_queue/FeedQueue.h"
 #include "../libs/pet_queue/PetQueue.h"
 #include "../libs/logger/Logger.h"
@@ -9,11 +9,12 @@
 #include "../libs/cat_service/CatService.h"
 #include "../libs/space_cat/SpaceCat.h"
 
+#define MAX_BUF_SIZE 500
 struct Params {
     size_t udp_port;
     size_t tcp_port;
     std::string ipv4;
-    Params(const std::string & ip): udp_port(32132), tcp_port(45341) {};
+    Params(const std::string & ip): ipv4(ip), udp_port(32132), tcp_port(45341) {};
     Params(size_t udpport, size_t tcpport, const std::string & ip): udp_port(udpport),
     tcp_port(tcpport), ipv4(ip) {};
 };
@@ -34,10 +35,11 @@ struct PairHash {
 class Controller {
     private:
         Params params_;
+        std::mutex feed_mutex;
         std::unique_ptr<Logger> logger;
         std::unique_ptr<PetQueue> petq;
         std::unique_ptr<Repository> repo;
-        std::unique_ptr<UDPTransceiver> udpt;
+        std::unique_ptr<UDPTransceiverI> udpt;
         std::unordered_map<std::pair<unsigned, std::string>, FeedQueue, PairHash> feedq;
        // std::unordered_map<std::pair<int, std::string>, PetQueue> petq;
         std::unique_ptr<SpaceCat> cat;
