@@ -3,10 +3,17 @@ project(tests)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(test
+add_executable(udptest
     udp_test.cpp
 )
 
-target_link_libraries(test PRIVATE
+add_executable(tcptest
+    tcp_test.cpp
+)
+
+target_link_libraries(udptest PRIVATE
     udptransceiver
+)
+target_link_libraries(tcptest PRIVATE
+    tcplib tcpserver tcpstream tcpacceptor
 )

@@ -1,1 +1,2 @@
 add_library(tcpacceptor INTERFACE TCPAcceptor.h)
+target_link_libraries(tcpacceptor INTERFACE tcpstream_i)
