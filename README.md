@@ -2,6 +2,11 @@
 
 Сетевой сервер и клиент для игры «Накорми и погладь кота». Сервер принимает UDP и TCP соединения, клиент — терминальное TUI-приложение. Инфраструктура поднимается через Docker (сервер, DNS, FTP).
 
+---
+
+## CatClient previe
+
+![cat_client_previre](https://github.com/xioazhweng/CatServer-C-TCP-UDP/blob/main/preview/cat_client.png?raw=true)
 
 ---
 
