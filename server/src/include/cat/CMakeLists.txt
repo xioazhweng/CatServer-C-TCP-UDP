@@ -1,1 +1,0 @@
-add_library(cat INTERFACE Cat.h)

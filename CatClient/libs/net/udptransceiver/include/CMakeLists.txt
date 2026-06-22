@@ -1,0 +1,2 @@
+add_library(udptransceiver_i INTERFACE UDPTransceiverI.h)
+target_include_directories(udptransceiver_i INTERFACE  $(CMAKE_CURRENT_SOURCE_DIR))

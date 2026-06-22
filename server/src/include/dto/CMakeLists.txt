@@ -1,1 +1,0 @@
-add_library(dto INTERFACE dto.h)

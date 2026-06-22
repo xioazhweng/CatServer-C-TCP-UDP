@@ -1,1 +1,0 @@
-add_library(catservice CatService.h CatService.cpp)

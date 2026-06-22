@@ -1,0 +1,3 @@
+add_library(udptransceiver UDPTransceiver.h UDPTransceiver.cpp)
+target_link_libraries(udptransceiver udptransceiver_i)
+target_include_directories(udptransceiver PUBLIC $(CMAKE_CURRENT_SOURCE_DIR))

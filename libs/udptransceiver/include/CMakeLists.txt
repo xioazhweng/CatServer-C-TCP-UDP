@@ -1,1 +1,0 @@
-add_library(udptransceiver_i INTERFACE UDPTransceiverI.h)

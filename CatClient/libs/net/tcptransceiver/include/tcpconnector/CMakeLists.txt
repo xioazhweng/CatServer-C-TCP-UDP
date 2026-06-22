@@ -1,0 +1,3 @@
+add_library(tcpconnector INTERFACE TCPConnector.h)
+target_link_libraries(tcpconnector INTERFACE tcpstream_i)
+target_include_directories(tcpconnector INTERFACE $(CMAKE_CURRENT_SOURCE_DIR))

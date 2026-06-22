@@ -1,0 +1,38 @@
+# Build
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.a
+*.so
+*.o
+*.d
+
+# Бинарники
+catserver
+catclient
+
+# Логи
+*.log
+log.txt
+
+# Статистика
+stats/stats.csv
+
+# Docker
+docker/cs/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Бэкап resolv.conf (dns_on.sh)
+/etc/resolv.conf.bak
