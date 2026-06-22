@@ -1,0 +1,6 @@
+add_subdirectory(food)
+add_subdirectory(feed_queue)
+add_subdirectory(pet_queue)
+add_subdirectory(logger)
+add_subdirectory(controller)
+add_subdirectory(cat_service)

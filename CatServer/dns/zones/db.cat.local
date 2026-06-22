@@ -1,0 +1,17 @@
+$TTL 86400
+@   IN SOA  ns.cat.local. admin.cat.local. (
+            2024010101 ; Serial
+            3600       ; Refresh
+            1800       ; Retry
+            604800     ; Expire
+            86400 )    ; Negative TTL
+
+@               IN NS   ns.cat.local.
+ns              IN A    127.0.0.1
+catserver       IN A    172.20.0.2
+
+; Feed the Cat — UDP
+_feed-the-cat._udp  86400 IN SRV 5 5 32132 catserver.cat.local.
+
+; Pet the Cat — TCP
+_pet-the-cat._tcp   86400 IN SRV 5 5 45341 catserver.cat.local.

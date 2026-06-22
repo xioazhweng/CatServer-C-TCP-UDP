@@ -1,0 +1,56 @@
+version: "3.9"
+
+networks:
+  catnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  stats:   # CatServer пишет сюда stats.csv, FTP его отдаёт
+
+services:
+
+  catserver:
+    build:
+      context: .
+      dockerfile: catserver/Dockerfile
+    container_name: catserver
+    networks:
+      catnet:
+        ipv4_address: 172.20.0.2
+    ports:
+      - "32132:32132/udp"   # Feed the Cat
+      - "45341:45341/tcp"   # Pet the Cat
+    volumes:
+      - stats:/app/build/stats
+    restart: unless-stopped
+
+  dns:
+    build:
+      context: dns
+      dockerfile: Dockerfile
+    container_name: catdns
+    networks:
+      catnet:
+        ipv4_address: 172.20.0.3
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    restart: unless-stopped
+
+  ftp:
+    build:
+      context: ftp
+      dockerfile: Dockerfile
+    container_name: catftp
+    networks:
+      catnet:
+        ipv4_address: 172.20.0.4
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"  # pasv
+    volumes:
+      - stats:/ftp/pub              # тот же volume — FTP видит stats.csv
+    restart: unless-stopped
