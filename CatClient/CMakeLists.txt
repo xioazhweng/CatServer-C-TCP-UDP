@@ -6,5 +6,5 @@ add_subdirectory(libs/net)
 add_subdirectory(src)
 
 add_executable(catclient src/main.cpp)
-target_link_libraries(catclient PRIVATE clientui controller)
+target_link_libraries(catclient PRIVATE clientui controller srvresolver resolv)
 target_include_directories(catclient PRIVATE src)

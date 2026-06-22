@@ -2,33 +2,41 @@
 #include <thread>
 #include "ClientUI.h"
 #include "Controller.h"
+#include "SRVResolver.h"
 
-static const std::string SERVER_HOST    = "catserver.cat.local";
-static const uint32_t    SERVER_UDP     = 32132;
-static const uint32_t    SERVER_TCP     = 45341;
 
-static const std::string CLIENT_IP      = "0.0.0.0";
-static const uint32_t    CLIENT_UDP     = 55000;
+static const std::string DOMAIN     = "cat.local";
+static const std::string CLIENT_IP  = "0.0.0.0";
+static const uint32_t    CLIENT_UDP = 55000;
+
 
 int main() {
     try {
+        // Получаем хост и порты из DNS SRV-записей
+        SRVRecord udp_srv = query_srv("_feed-the-cat._udp." + DOMAIN);
+        SRVRecord tcp_srv = query_srv("_pet-the-cat._tcp."  + DOMAIN);
+
+        std::string server_host = udp_srv.host;
+        uint32_t    server_udp  = udp_srv.port;
+        uint32_t    server_tcp  = tcp_srv.port;
+
         ClientParams params(
             CLIENT_IP,  std::to_string(CLIENT_UDP),
-            SERVER_HOST, std::to_string(SERVER_UDP)
+            server_host, std::to_string(server_udp)
         );
         ClientUI ui(params);
 
         NetworkController ctr(
             CLIENT_IP,   CLIENT_UDP,
-            SERVER_HOST, SERVER_UDP, SERVER_TCP
+            server_host, server_udp, server_tcp
         );
 
         std::thread ui_thread(&ClientUI::run, &ui);
 
         ui.add_log("WELCOME TO CATCLIENT!");
-        ui.add_log("Server: " + SERVER_HOST);
-        ui.add_log("UDP -> " + std::to_string(SERVER_UDP));
-        ui.add_log("TCP -> " + std::to_string(SERVER_TCP));
+        ui.add_log("SRV  -> " + server_host);
+        ui.add_log("UDP  -> " + std::to_string(server_udp));
+        ui.add_log("TCP  -> " + std::to_string(server_tcp));
 
         ctr.listen();
 
